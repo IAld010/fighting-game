@@ -18,14 +18,39 @@
                 <div class="health-fill" ></div>
             </div>
         </div>
+        <div id="fpsCounter" style="position:fixed;top:4px;right:10px;color:#0f0;font:12px monospace;z-index:1000;background:rgba(0,0,0,0.6);padding:2px 6px;border-radius:3px;">FPS: --</div>
         <div id="gameWrapper">
             <canvas id="gameCanvas"></canvas>
 
             <!-- 联机连接状态 -->
             <div id="connectionStatus">正在连接服务器...</div>
 
-            <!-- 手机触控按钮 - 叠加在画面上 -->
-            <div id="mobileControls">
+            <!-- 全屏按钮 -->
+            <button id="fullscreenBtn" onclick="toggleFullscreen()">⛶ 全屏</button>
+
+            <!-- 联机模式: 单人操控 (移动在左/攻击在右) -->
+            <div id="mobileControlsOnline" class="mobile-controls">
+                <div class="controls-side controls-left">
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn" id="ctrl-left">◀</button>
+                        <button class="ctrl-btn" id="ctrl-right">▶</button>
+                    </div>
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn ctrl-jump" id="ctrl-jump">▲</button>
+                    </div>
+                </div>
+                <div class="controls-side controls-right">
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn ctrl-attack" id="ctrl-attack">攻击</button>
+                    </div>
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn ctrl-special" id="ctrl-special">必杀</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 本地模式: 双人操控 -->
+            <div id="mobileControlsLocal" class="mobile-controls">
                 <div class="controls-side controls-left">
                     <div class="ctrl-row">
                         <button class="ctrl-btn" id="p1-left">◀</button>
@@ -107,6 +132,7 @@
             <button id="restartBtn" onclick="restartGame()">重新开始</button>
         </div>
 
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
         <script src="util.js"></script>
         <script src="sptite.js"></script>
 

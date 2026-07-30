@@ -1,10 +1,9 @@
-function Sprite({position,src,totalFrames=1,scale=1,offset={x:0,y:0},
-    drawWidth,drawHeight,flip=false}){
+// ============ PixiJS Sprite (静态图 / 帧动画) ============
+function Sprite({position, src, totalFrames=1, scale=1, offset={x:0,y:0},
+    drawWidth, drawHeight, flip=false, onReady}){
     this.offset = offset;
     this.position = position;
     this.flip = flip;
-    this.image = new Image();
-    this.image.src = src;
     this.totalFrames = totalFrames;
     this.scale = scale;
     this.drawWidth = drawWidth;
@@ -12,287 +11,233 @@ function Sprite({position,src,totalFrames=1,scale=1,offset={x:0,y:0},
     this.framesCurrent = 0;
     this.framesElapsed = 0;
     this.framesHold = 18;
-   
+    this.pixiSprite = null;
+    this._textures = null;
+    this._fw = 0; this._fh = 0;
+    this._dw = 0; this._dh = 0;
+    this._onReady = onReady || null;
+    this._initPixi(src);
 }
- Sprite.prototype.draw = function(){
-    const frameWidth = this.image.width / this.totalFrames;
-    const frameHeight = this.image.height;
-    const dw = this.drawWidth || frameWidth * this.scale;
-    const dh = this.drawHeight || frameHeight * this.scale;
-    const dx = this.position.x - this.offset.x;
-    const dy = this.position.y - this.offset.y;
 
-    if(this.flip){
-        c.save();
-        c.translate(dx + dw / 2, 0);
-        c.scale(-1, 1);
-        c.drawImage(
-            this.image, 
-            this.framesCurrent * frameWidth, 
-            0,
-            frameWidth,
-            frameHeight,
-            -dw / 2,
-            dy,
-            dw,
-            dh
-        );
-        c.restore();
-    } else {
-        c.drawImage(
-            this.image, 
-            this.framesCurrent * frameWidth, 
-            0,
-            frameWidth,
-            frameHeight,
-            dx,
-            dy,
-            dw,
-            dh
-        );
+Sprite.prototype._initPixi = function(src){
+    var self = this;
+    function buildFromImage(img){
+        var bt = PIXI.BaseTexture.from(img, {scaleMode: PIXI.SCALE_MODES.NEAREST});
+        if(self.totalFrames > 1){
+            self._fw = bt.width / self.totalFrames;
+            self._fh = bt.height;
+            self._textures = [];
+            for(var i = 0; i < self.totalFrames; i++){
+                self._textures.push(new PIXI.Texture(bt, new PIXI.Rectangle(i * self._fw, 0, self._fw, self._fh)));
+            }
+            self.pixiSprite = new PIXI.AnimatedSprite(self._textures);
+            self.pixiSprite.loop = true;
+            self.pixiSprite.animationSpeed = 0.5;
+            self.pixiSprite.play();
+        } else {
+            self._fw = bt.width;
+            self._fh = bt.height;
+            self._textures = [new PIXI.Texture(bt)];
+            self.pixiSprite = new PIXI.Sprite(self._textures[0]);
+        }
+        self._dw = self.drawWidth || self._fw * self.scale;
+        self._dh = self.drawHeight || self._fh * self.scale;
+        self.pixiSprite.width = self._dw;
+        self.pixiSprite.height = self._dh;
+        if(self.flip){
+            self.pixiSprite.anchor.set(0.5, 0);
+            self.pixiSprite.scale.x = -Math.abs(self.pixiSprite.scale.x);
+        }
+        self._updatePos();
+        if(self._onReady) self._onReady(self);
     }
-    };
-Sprite.prototype.animateFrames = function(){
-    this.framesElapsed++;
-    if(this.framesElapsed >= this.framesHold){
-        this.framesElapsed = 0;
-        this.framesCurrent = (this.framesCurrent + 1) % this.totalFrames;
+    // 优先使用已缓存的图片
+    if(typeof imageCache !== 'undefined' && imageCache[src] && imageCache[src].complete && imageCache[src].naturalWidth){
+        buildFromImage(imageCache[src]);
+    } else {
+        var img = new Image();
+        img.onload = function(){ buildFromImage(img); };
+        img.onerror = function(){ console.warn('PixiJS纹理加载失败:', src); };
+        img.src = src;
     }
 };
+
+Sprite.prototype._updatePos = function(){
+    if(!this.pixiSprite) return;
+    var dx = this.position.x - this.offset.x;
+    var dy = this.position.y - this.offset.y;
+    if(this.flip) this.pixiSprite.x = dx + this._dw / 2;
+    else this.pixiSprite.x = dx;
+    this.pixiSprite.y = dy;
+};
+
+Sprite.prototype.draw = function(){};
+Sprite.prototype.animateFrames = function(){};
 Sprite.prototype.update = function(){
-    this.draw();
-    this.animateFrames();
-}
+    this._updatePos();
+};
 
-
+// ============ PixiJS Fighter (多动画角色) ============
 function Fighter({position,src,totalFrames=1,scale=1,speed,
-    offset={x:0,y:0},attackBox={width:0,height:0,offset:{}},sprites,flip=false}){
+    offset={x:0,y:0},attackBox={width:0,height:0,offset:{}},sprites,flip=false,stage}){
     Sprite.call(this,{position,src,totalFrames,scale,offset,flip});
     this.speed = speed;
     this.width = 50;
     this.height = 150;
     this.isAttacking = false;
-    this.attackCombo = 0; // 当前连招阶段: 0=无, 1=攻击1完成, 2=攻击2完成
-    this.lastAttackTime = 0; // 上次攻击时间戳
-    this.comboWindow = 2000; // 连招窗口期(毫秒)
+    this.attackCombo = 0;
+    this.lastAttackTime = 0;
+    this.comboWindow = 2000;
     this.attackBox = {
-        position: {
-            x: this.position.x ,
-            y: this.position.y
-        },
+        position: { x: this.position.x, y: this.position.y },
         offset: attackBox.offset,
         width: attackBox.width,
         height: attackBox.height
     };
     this.sprites = sprites;
     this.health = 100;
-    for(const sprite in this.sprites){
-        this.sprites[sprite].image = new Image();
-        this.sprites[sprite].image.src = this.sprites[sprite].src;
-    }
+    this._animTextures = {};
+    this._currentAnim = 'idle';
+    this._stage = stage;
+    this._preloadAll();
 }
 Fighter.prototype = Object.create(Sprite.prototype);
 Fighter.prototype.constructor = Fighter;
-Fighter.prototype.update = function(){
-    this.draw();
-    if(!this.dead){
-        this.animateFrames();
+
+Fighter.prototype._preloadAll = function(){
+    var self = this;
+    for(var key in this.sprites){
+        var sd = this.sprites[key];
+        if(!sd || !sd.src) continue;
+        (function(k, data){
+            function buildFromImage(img){
+                var bt = PIXI.BaseTexture.from(img, {scaleMode: PIXI.SCALE_MODES.NEAREST});
+                var fw = bt.width / data.totalFrames;
+                var fh = bt.height;
+                var arr = [];
+                for(var i = 0; i < data.totalFrames; i++){
+                    arr.push(new PIXI.Texture(bt, new PIXI.Rectangle(i * fw, 0, fw, fh)));
+                }
+                self._animTextures[k] = arr;
+            }
+            if(typeof imageCache !== 'undefined' && imageCache[data.src] && imageCache[data.src].complete && imageCache[data.src].naturalWidth){
+                buildFromImage(imageCache[data.src]);
+            } else {
+                var img = new Image();
+                img.onload = function(){ buildFromImage(img); };
+                img.onerror = function(){ console.warn('Fighter纹理加载失败:', data.src); };
+                img.src = data.src;
+            }
+        })(key, sd);
     }
- 
+};
+
+Fighter.prototype.update = function(dt){
+    var d = dt || 1;
+    if(!this.dead){
+        this.framesElapsed++;
+        if(this.framesElapsed >= this.framesHold){
+            this.framesElapsed = 0;
+            this.framesCurrent = (this.framesCurrent + 1) % this.totalFrames;
+        }
+    }
     this.attackBox.position.x = this.position.x + this.attackBox.offset.x;
     this.attackBox.position.y = this.position.y + this.attackBox.offset.y;
-    this.position.y += this.speed.y;//玩家位置y坐标加上速度y坐标
-    this.position.x += this.speed.x;//玩家位置x坐标加上速度x坐标
-
-    if (this.position.y + this.height + this.speed.y >= ground) {
-        this.speed.y = 0;//玩家速度y坐标为0
-        this.position.y = ground - this.height;//玩家位置y坐标为地面高度减去玩家高度，意思是玩家站在地面上
-    }else{
-        this.speed.y += gravity;//玩家速度y坐标加上重力
+    this.position.y += this.speed.y * d;
+    this.position.x += this.speed.x * d;
+    if(this.position.y + this.height + this.speed.y * d >= ground){
+        this.speed.y = 0;
+        this.position.y = ground - this.height;
+    } else {
+        this.speed.y += gravity * d;
     }
-
-    // 攻击动画播放到最后一帧时，自动结束攻击状态
     if(this.isAttacking && this.framesCurrent === this.totalFrames - 1){
         this.isAttacking = false;
     }
+    var texArr = this._animTextures[this._currentAnim];
+    if(this.pixiSprite && texArr && texArr[this.framesCurrent]){
+        this.pixiSprite.texture = texArr[this.framesCurrent];
+    }
+    this._updatePos();
 };
-//判断玩家是否在地面上
+
 Fighter.prototype.isOnGround = function(){
     return this.position.y + this.height >= ground;
 };
-Fighter.prototype.attack = function(){ 
-    if(this.isAttacking) return;//正在攻击中，不能重复触发
+
+Fighter.prototype.attack = function(){
+    if(this.isAttacking) return;
     this.isAttacking = true;
-    const now = Date.now();
-    const timeSinceLastAttack = now - this.lastAttackTime;
-    
-    // 判断连招阶段
-    if(this.attackCombo === 2 && timeSinceLastAttack <= this.comboWindow){
-        // 攻击3
-        this.switchSprite('attack3');
-        this.attackCombo = 0; // 连招结束
-    } else if(this.attackCombo === 1 && timeSinceLastAttack <= this.comboWindow){
-        // 攻击2
-        this.switchSprite('attack2');
-        this.attackCombo = 2;
+    var now = Date.now();
+    var dt = now - this.lastAttackTime;
+    if(this.attackCombo === 2 && dt <= this.comboWindow){
+        this.switchSprite('attack3'); this.attackCombo = 0;
+    } else if(this.attackCombo === 1 && dt <= this.comboWindow){
+        this.switchSprite('attack2'); this.attackCombo = 2;
     } else {
-        // 攻击1(起手)
-        this.switchSprite('attack1');
-        this.attackCombo = 1;
+        this.switchSprite('attack1'); this.attackCombo = 1;
     }
     this.lastAttackTime = now;
 };
+
 Fighter.prototype.takeHit = function(){
     this.health -= 20;
-    if(this.health <= 0){
-        this.switchSprite('death');
-    } else {
-        this.switchSprite('takeHit');
-    }
-}
-Fighter.prototype.switchSprite = function(sprite){
-    if(this.image === this.sprites.death.image){
-        if(this.framesCurrent === this.sprites.death.totalFrames - 1){
-            this.dead = true;
-        }
-        return;
-    }
-    // 攻击动画未播放完时，不允许切换到其他状态(除了连招攻击)
-    const isAttackSprite = (this.image === this.sprites.attack1.image || 
-        (this.sprites.attack2 && this.image === this.sprites.attack2.image) ||
-        (this.sprites.attack3 && this.image === this.sprites.attack3.image));
-    const isNextCombo = (sprite === 'attack2' || sprite === 'attack3');
-    if(isAttackSprite && !isNextCombo && 
-        this.framesCurrent < this.totalFrames - 1){
-        return;
-    }
-    if(this.image === this.sprites.takeHit.image && 
-        this.framesCurrent < this.sprites.takeHit.totalFrames - 1){
-        return;
-    }
-    switch(sprite){
-        case 'idle':
-            if(this.image !== this.sprites.idle.image){
-                this.image = this.sprites.idle.image;
-                this.totalFrames = this.sprites.idle.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'run':
-            if(this.image !== this.sprites.run.image){
-                this.image = this.sprites.run.image;
-                this.totalFrames = this.sprites.run.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'jump':
-            if(this.image !== this.sprites.jump.image){
-                this.image = this.sprites.jump.image;
-                this.totalFrames = this.sprites.jump.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'fall':
-            if(this.image !== this.sprites.fall.image){
-                this.image = this.sprites.fall.image;
-                this.totalFrames = this.sprites.fall.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'attack1':
-            if(this.image !== this.sprites.attack1.image){
-                this.image = this.sprites.attack1.image;
-                this.totalFrames = this.sprites.attack1.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'attack2':
-            if(this.image !== this.sprites.attack2.image){
-                this.image = this.sprites.attack2.image;
-                this.totalFrames = this.sprites.attack2.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'attack3':
-            if(this.image !== this.sprites.attack3.image){
-                this.image = this.sprites.attack3.image;
-                this.totalFrames = this.sprites.attack3.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'takeHit':
-            if(this.image !== this.sprites.takeHit.image){
-                this.image = this.sprites.takeHit.image;
-                this.totalFrames = this.sprites.takeHit.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        case 'death':
-            if(this.image !== this.sprites.death.image){
-                this.image = this.sprites.death.image;
-                this.totalFrames = this.sprites.death.totalFrames;
-                this.framesCurrent = 0;
-            }
-            break;
-        default:
-            break;
-    }  
-}
+    if(this.health <= 0) this.switchSprite('death');
+    else this.switchSprite('takeHit');
+};
 
-// 子弹类 - 用于火龙波和龟派气功
+Fighter.prototype.switchSprite = function(sprite){
+    if(this._currentAnim === 'death'){
+        if(this.framesCurrent === this.totalFrames - 1) this.dead = true;
+        return;
+    }
+    var isAttack = (this._currentAnim==='attack1'||this._currentAnim==='attack2'||this._currentAnim==='attack3');
+    var isNextCombo = (sprite==='attack2'||sprite==='attack3');
+    if(isAttack && !isNextCombo && this.framesCurrent < this.totalFrames - 1) return;
+    if(this._currentAnim === 'takeHit' && this.framesCurrent < this.totalFrames - 1) return;
+    if(this._currentAnim === sprite) return;
+    var textures = this._animTextures[sprite];
+    if(!textures || textures.length === 0) return;
+    this._currentAnim = sprite;
+    this.totalFrames = textures.length;
+    this.framesCurrent = 0;
+    this.framesElapsed = 0;
+};
+
+// ============ PixiJS Projectile (子弹/必杀) ============
 function Projectile({position, speed, direction, color, size=10, damage=30, isKamehame=false}){
     this.position = position;
     this.speed = speed;
-    this.direction = direction; // 1=向右, -1=向左
+    this.direction = direction;
     this.color = color;
     this.size = size;
     this.damage = damage;
     this.isKamehame = isKamehame;
-    this.life = 1; // 1=存活, 0=销毁
+    this.life = 1;
+    this.pixiGraphics = new PIXI.Graphics();
+    this._drawShape();
 }
-Projectile.prototype.draw = function(){
-    c.save();
-    c.beginPath();
-    
+
+Projectile.prototype._drawShape = function(){
+    var g = this.pixiGraphics;
+    g.clear();
+    var hex = parseInt(this.color.replace('#',''), 16);
     if(this.isKamehame){
-        // 龟派气功 - 蓝色长条形状
-        c.fillStyle = this.color;
-        c.shadowColor = '#00bfff';
-        c.shadowBlur = 15;
-        c.ellipse(
-            this.position.x, this.position.y,
-            this.size * 2, this.size, 0, 0, Math.PI * 2
-        );
-        c.fill();
-        // 内部高光
-        c.fillStyle = 'white';
-        c.globalAlpha = 0.6;
-        c.ellipse(
-            this.position.x, this.position.y,
-            this.size, this.size * 0.4, 0, 0, Math.PI * 2
-        );
-        c.fill();
+        g.beginFill(hex); g.drawEllipse(0,0,this.size*2,this.size); g.endFill();
+        g.beginFill(0xffffff,0.6); g.drawEllipse(0,0,this.size,this.size*0.4); g.endFill();
     } else {
-        // 火龙波 - 橙红色圆形
-        c.fillStyle = this.color;
-        c.shadowColor = '#ff4500';
-        c.shadowBlur = 20;
-        c.arc(this.position.x, this.position.y, this.size, 0, Math.PI * 2);
-        c.fill();
-        // 内部黄色核心
-        c.fillStyle = '#ffd700';
-        c.globalAlpha = 0.8;
-        c.arc(this.position.x, this.position.y, this.size * 0.5, 0, Math.PI * 2);
-        c.fill();
+        g.beginFill(hex); g.drawCircle(0,0,this.size); g.endFill();
+        g.beginFill(0xffd700,0.8); g.drawCircle(0,0,this.size*0.5); g.endFill();
     }
-    
-    c.restore();
+    g.x = this.position.x;
+    g.y = this.position.y;
 };
-Projectile.prototype.update = function(){
-    this.draw();
-    this.position.x += this.speed.x * this.direction;
-    // 超出画布范围则销毁
-    if(this.position.x < -50 || this.position.x > canvas.width + 50){
-        this.life = 0;
-    }
+
+Projectile.prototype.draw = function(){};
+Projectile.prototype.update = function(dt){
+    var d = dt || 1;
+    this.position.x += this.speed.x * this.direction * d;
+    if(this.position.x < -50 || this.position.x > 1074) this.life = 0;
+    this.pixiGraphics.x = this.position.x;
+    this.pixiGraphics.y = this.position.y;
 };

@@ -43,6 +43,8 @@ npm -v    # 应显示 6.x 或更高
 
 ### 步骤
 
+项目入口文件是 **`server.js`**，负责启动 HTTP 服务和 WebSocket 联机。
+
 ```bash
 # 1. 进入项目目录
 cd fighting
@@ -50,8 +52,9 @@ cd fighting
 # 2. 安装依赖（仅首次需要）
 npm install
 
-# 3. 启动服务器
-npm start
+# 3. 启动（二选一）
+npm start            # 推荐，等同于 ↓
+node server.js       # 直接运行
 ```
 
 终端显示以下内容说明启动成功：

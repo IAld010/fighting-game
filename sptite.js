@@ -19,9 +19,12 @@ function Sprite({position,src,totalFrames=1,scale=1,offset={x:0,y:0},
     const frameHeight = this.image.height;
     const dw = this.drawWidth || frameWidth * this.scale;
     const dh = this.drawHeight || frameHeight * this.scale;
+    const dx = this.position.x - this.offset.x;
+    const dy = this.position.y - this.offset.y;
 
     if(this.flip){
         c.save();
+        c.translate(dx + dw / 2, 0);
         c.scale(-1, 1);
         c.drawImage(
             this.image, 
@@ -29,8 +32,8 @@ function Sprite({position,src,totalFrames=1,scale=1,offset={x:0,y:0},
             0,
             frameWidth,
             frameHeight,
-            -(this.position.x - this.offset.x) - dw,
-            this.position.y - this.offset.y,
+            -dw / 2,
+            dy,
             dw,
             dh
         );
@@ -42,8 +45,8 @@ function Sprite({position,src,totalFrames=1,scale=1,offset={x:0,y:0},
             0,
             frameWidth,
             frameHeight,
-            this.position.x-this.offset.x,
-            this.position.y-this.offset.y,
+            dx,
+            dy,
             dw,
             dh
         );
@@ -51,13 +54,9 @@ function Sprite({position,src,totalFrames=1,scale=1,offset={x:0,y:0},
     };
 Sprite.prototype.animateFrames = function(){
     this.framesElapsed++;
-    if(this.framesElapsed % this.framesHold === 0){
-        if(this.framesCurrent < this.totalFrames - 1){
-            this.framesCurrent++;
-        }else{
-            this.framesCurrent = 0;
-        }
-
+    if(this.framesElapsed >= this.framesHold){
+        this.framesElapsed = 0;
+        this.framesCurrent = (this.framesCurrent + 1) % this.totalFrames;
     }
 };
 Sprite.prototype.update = function(){
@@ -121,7 +120,7 @@ Fighter.prototype.update = function(){
 Fighter.prototype.isOnGround = function(){
     return this.position.y + this.height >= ground;
 };
-Fighter.prototype.attack = function(){
+Fighter.prototype.attack = function(){ 
     if(this.isAttacking) return;//正在攻击中，不能重复触发
     this.isAttacking = true;
     const now = Date.now();

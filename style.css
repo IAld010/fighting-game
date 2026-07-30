@@ -13,6 +13,9 @@ body{
 }
 #gameCanvas{
      border: 2px solid #444;
+     image-rendering: pixelated;
+     image-rendering: crisp-edges;
+     will-change: transform;
 }
 #hud{
     display: flex;
@@ -106,7 +109,7 @@ body{
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
+    display: none;
     justify-content: center;
     align-items: center;
     font-size: 72px;
@@ -128,7 +131,7 @@ body{
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    display: flex;
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -197,4 +200,297 @@ body{
     font-family: Arial, sans-serif;
     font-weight: bold;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+.mobile-ready-hint{
+    display: none;
+    color: #aaa;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+/* ============ 角色选择界面 ============ */
+#selectScreen{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 40;
+}
+.select-title{
+    font-size: 56px;
+    color: #ffd700;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+    margin-bottom: 40px;
+}
+.select-container{
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.select-player{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.select-player-label{
+    font-size: 32px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+.select-vs{
+    font-size: 40px;
+    color: #ffd700;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+}
+.char-options{
+    display: flex;
+    gap: 15px;
+}
+.char-card{
+    width: 130px;
+    height: 160px;
+    border: 3px solid #555;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255,255,255,0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 10px;
+}
+.char-card:hover{
+    border-color: #aaa;
+    transform: scale(1.05);
+}
+.char-card.selected{
+    border-color: #ffd700;
+    background-color: rgba(255,215,0,0.15);
+    box-shadow: 0 0 15px rgba(255,215,0,0.3);
+}
+.char-preview{
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+.char-name{
+    color: white;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    margin-top: 8px;
+}
+#confirmSelectBtn{
+    padding: 14px 50px;
+    font-size: 22px;
+    color: white;
+    background-color: #e94560;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+#confirmSelectBtn:hover{
+    background-color: #ff6b6b;
+    transform: scale(1.05);
+}
+
+/* ============ 手机触控按钮 ============ */
+#gameWrapper{
+    position: relative;
+    display: inline-block;
+}
+#connectionStatus{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffd700;
+    font-size: 20px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    z-index: 5;
+    pointer-events: none;
+    text-align: center;
+    background-color: rgba(0,0,0,0.5);
+    padding: 10px 20px;
+    border-radius: 8px;
+}
+#mobileControls{
+    display: none;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    justify-content: space-between;
+    padding: 10px 15px;
+    pointer-events: none;
+}
+.controls-side{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.ctrl-row{
+    display: flex;
+    gap: 8px;
+}
+.ctrl-btn{
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.4);
+    background-color: rgba(0,0,0,0.3);
+    color: white;
+    font-size: 18px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: background-color 0.1s;
+    pointer-events: auto;
+}
+.ctrl-btn:active{
+    background-color: rgba(255,255,255,0.35);
+    border-color: rgba(255,255,255,0.7);
+}
+.ctrl-jump{
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+}
+.ctrl-attack{
+    width: 56px;
+    height: 50px;
+    border-radius: 25px;
+    font-size: 12px;
+    background-color: rgba(233,69,96,0.35);
+    border-color: rgba(233,69,96,0.7);
+}
+.ctrl-attack:active{
+    background-color: rgba(233,69,96,0.7);
+}
+.ctrl-special{
+    width: 56px;
+    height: 50px;
+    border-radius: 25px;
+    font-size: 12px;
+    background-color: rgba(0,191,255,0.35);
+    border-color: rgba(0,191,255,0.7);
+}
+.ctrl-special:active{
+    background-color: rgba(0,191,255,0.7);
+}
+
+/* ============ 手机端适配 ============ */
+@media (max-width: 1100px) {
+    body{
+        justify-content: flex-start;
+        align-items: center;
+        padding-top: 5px;
+        overflow: hidden;
+    }
+    #hud{
+        width: 100vw;
+        padding: 0 10px;
+    }
+    .health-bar-bg{
+        height: 8px;
+    }
+    .fighter-name{
+        font-size: 12px;
+    }
+    #timer{
+        font-size: 14px;
+        min-width: 30px;
+    }
+    #gameWrapper{
+        width: 100vw;
+        overflow: hidden;
+    }
+    #gameCanvas{
+        width: 100vw;
+        height: auto;
+        display: block;
+    }
+    #mobileControls{
+        display: flex;
+    }
+    .mobile-ready-hint{
+        display: block;
+    }
+    /* 角色选择适配 */
+    .select-title{
+        font-size: 36px;
+        margin-bottom: 20px;
+    }
+    .select-container{
+        gap: 15px;
+    }
+    .char-card{
+        width: 90px;
+        height: 120px;
+    }
+    .char-preview{
+        width: 50px;
+        height: 50px;
+    }
+    .char-name{
+        font-size: 11px;
+    }
+    .select-player-label{
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+    .select-vs{
+        font-size: 28px;
+    }
+    /* 准备界面适配 */
+    .start-title{
+        font-size: 40px;
+        margin-bottom: 30px;
+    }
+    .ready-slot{
+        width: 140px;
+        height: 160px;
+    }
+    .ready-label{
+        font-size: 24px;
+    }
+    .ready-key{
+        font-size: 13px;
+    }
+    .ready-status{
+        font-size: 16px;
+    }
+    /* 结束界面适配 */
+    #winnerText{
+        font-size: 32px;
+    }
+    #restartBtn{
+        padding: 10px 30px;
+        font-size: 18px;
+    }
 }

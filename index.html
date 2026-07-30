@@ -2,7 +2,7 @@
     <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <link rel="stylesheet" href="style.css">
         <title>Document</title>
     </head>
@@ -18,23 +18,89 @@
                 <div class="health-fill" ></div>
             </div>
         </div>
-        <canvas id="gameCanvas"></canvas>
+        <div id="gameWrapper">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- 联机连接状态 -->
+            <div id="connectionStatus">正在连接服务器...</div>
+
+            <!-- 手机触控按钮 - 叠加在画面上 -->
+            <div id="mobileControls">
+                <div class="controls-side controls-left">
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn" id="p1-left">◀</button>
+                        <button class="ctrl-btn" id="p1-right">▶</button>
+                    </div>
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn ctrl-jump" id="p1-jump">▲</button>
+                    </div>
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn ctrl-attack" id="p1-attack">攻击</button>
+                        <button class="ctrl-btn ctrl-special" id="p1-special">必杀</button>
+                    </div>
+                </div>
+                <div class="controls-side controls-right">
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn ctrl-attack" id="p2-attack">攻击</button>
+                        <button class="ctrl-btn ctrl-special" id="p2-special">必杀</button>
+                    </div>
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn ctrl-jump" id="p2-jump">▲</button>
+                    </div>
+                    <div class="ctrl-row">
+                        <button class="ctrl-btn" id="p2-left">◀</button>
+                        <button class="ctrl-btn" id="p2-right">▶</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 角色选择界面 -->
+        <div id="selectScreen">
+            <div class="select-title">选择角色</div>
+            <div class="select-container">
+                <div class="select-player" id="p1Select">
+                    <div class="select-player-label">P1</div>
+                    <div class="char-options">
+                        <div class="char-card selected" data-player="1" data-char="king blue">
+                            <img src="img/king blue/Idle.png" class="char-preview">
+                            <div class="char-name">蓝骑士</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="select-vs">VS</div>
+                <div class="select-player" id="p2Select">
+                    <div class="select-player-label">P2</div>
+                    <div class="char-options">
+                        <div class="char-card selected" data-player="2" data-char="king blue">
+                            <img src="img/king blue/Idle.png" class="char-preview">
+                            <div class="char-name">蓝骑士</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="confirmSelectBtn">确认选择</button>
+        </div>
+
+        <!-- 准备界面 -->
         <div id="startScreen">
             <div class="start-title">双人格斗</div>
             <div class="ready-container">
                 <div class="ready-slot" id="p1Ready">
                     <div class="ready-label">P1</div>
-                    <div class="ready-key">按 J 准备</div>
+                    <div class="ready-key" id="p1ReadyKey">按 J 准备</div>
                     <div class="ready-status" id="p1Status">未准备</div>
                 </div>
                 <div class="vs-text">VS</div>
                 <div class="ready-slot" id="p2Ready">
                     <div class="ready-label">P2</div>
-                    <div class="ready-key">按 1 准备</div>
+                    <div class="ready-key" id="p2ReadyKey">按 1 准备</div>
                     <div class="ready-status" id="p2Status">未准备</div>
                 </div>
             </div>
+            <div class="mobile-ready-hint">点击"准备"按钮开始</div>
         </div>
+
         <div id="vsScreen">P1 VS P2</div>
         <div id="gameOver">
             <div id="winnerText">P1 获胜！</div>

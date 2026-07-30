@@ -23,8 +23,10 @@ let myPlayerId = null; // 1=P1, 2=P2
 let opponentConnected = false;
 
 function connectServer(){
-    const host = location.hostname;
-    ws = new WebSocket(`ws://${host}:8080`);
+    // 生产环境用 wss，本地开发用 ws；部署平台自动处理端口
+    var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var wsUrl = protocol + '//' + location.host;
+    ws = new WebSocket(wsUrl);
     ws.onopen = () => {
         console.log('已连接到服务器');
         document.getElementById('connectionStatus').textContent = '已连接服务器，等待对手...';

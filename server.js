@@ -104,7 +104,8 @@ wss.on('connection', (ws) => {
     });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+const actualPort = process.env.PORT || PORT;
+server.listen(actualPort, '0.0.0.0', () => {
     const os = require('os');
     const nets = os.networkInterfaces();
     let localIP = 'localhost';
@@ -117,6 +118,6 @@ server.listen(PORT, '0.0.0.0', () => {
         }
     }
     console.log(`服务器已启动!`);
-    console.log(`本机访问: http://localhost:${PORT}`);
-    console.log(`手机访问: http://${localIP}:${PORT}`);
+    console.log(`本机访问: http://localhost:${actualPort}`);
+    console.log(`手机访问: http://${localIP}:${actualPort}`);
 });

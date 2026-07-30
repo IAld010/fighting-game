@@ -10,44 +10,153 @@ const background = new Sprite({
         x: 0,
         y: 0
     },
-    src: 'img/image_227620290198042.png'
+    src: 'img/image_227620290198042.png',
+    drawWidth: 1024,
+    drawHeight: 576
 });
 const shuzhuang = new Sprite({
     position: {
-        x: 950,
-        y: 300
+        x: 900,
+        y: 270
     },
     src: 'img/Idle (64x32).png',
-    totalFrames: 18
+    totalFrames: 18,
+    scale: 2,
+
 });
 
 
-const player = {
+const player =
+new Fighter({
     position: {
-        x: 100,
+        x: canvas.width -900,
         y: 0
     },
-    width: 50,
-    height: 150,
-    speed: {x: 0, y: 0}
-};
-//判断玩家是否在地面上
-function isOnGround(fighter) {
-    return fighter.position.y + fighter.height >= ground;
-}
+    speed: {x: 0, y: 0},
+    src:'img/king blue/Idle.png',
+    totalFrames: 8,
+    scale: 2.5,
+    offset: {
+        x: 215,
+        y: 120
+    },
+    attackBox: {
+        width: 100,
+        height: 50,
+        offset: {
+            x: 50,
+            y: 50
+        }
+    },
+    sprites:{
+        idle: {
+            src: 'img/king blue/Idle.png',
+            totalFrames: 8,
+            scale: 2.5,
+        },
+        run: {
+            src: 'img/king blue/Run.png',
+            totalFrames: 8,
+            scale: 2.5,
+        },
+        jump: {
+            src: 'img/king blue/Jump.png',
+            totalFrames: 2,
+            scale: 2.5,
+        },
+        fall: {
+            src: 'img/king blue/Fall.png',
+            totalFrames: 2,
+            scale: 2.5,
+        },
+        attack1: {
+            src: 'img/king blue/Attack1.png',
+            totalFrames: 4,
+            scale: 2.5,
+        },
+        takeHit: {
+            src: 'img/king blue/Take hit.png',
+            totalFrames: 3,
+            scale: 2.5,
+        },
+    }
+});
+
+
+const enemy =
+new Fighter({
+    position: {
+        x: canvas.width - 200,
+        y: 0
+    },
+    speed: {x: 0, y: 0},
+    src:'img/king blue/Idle.png',
+    totalFrames: 8,
+    scale: 2.5,
+    offset: {
+        x: 215,
+        y: 120
+    },
+    attackBox: {
+        width: 100,
+        height: 50,
+        offset: {
+            x: -100,
+            y: 50
+        }
+    },
+    sprites:{
+        idle: {
+            src: 'img/king blue/Idle.png',
+            totalFrames: 8,
+            scale: 2.5,
+        },
+        run: {
+            src: 'img/king blue/Run.png',
+            totalFrames: 8,
+            scale: 2.5,
+        },
+        jump: {
+            src: 'img/king blue/Jump.png',
+            totalFrames: 2,
+            scale: 2.5,
+        },
+        fall: {
+            src: 'img/king blue/Fall.png',
+            totalFrames: 2,
+            scale: 2.5,
+        },
+        attack1: {
+            src: 'img/king blue/Attack1.png',
+            totalFrames: 4,
+            scale: 2.5,
+        },
+        takeHit: {
+            src: 'img/king blue/Take hit.png',
+            totalFrames: 3,
+            scale: 2.5,
+        },
+    }
+});
+
+
 
 const keys = {
     a:false,
     d:false,
+    left:false,
+    right:false
     
 };
 
 //判断玩家的运动方向
 window.addEventListener('keydown', (event) => {
     console.log(event.key);
+    
+    //player 1 wasd
     switch (event.key) {
         case 'w':
-            if (isOnGround(player)) {
+            if (player.isOnGround()) {
                 player.speed.y = -20;//玩家速度y坐标为-20，意思是玩家跳跃
             }
             break;
@@ -56,6 +165,29 @@ window.addEventListener('keydown', (event) => {
             break;
         case 'd':
             keys.d = true;
+            break;
+            //空格
+        case 'j':
+            player.attack();
+            break;
+        default:
+            break;
+    }
+    //enemy Arrow keys
+    switch (event.key) {
+        case 'ArrowUp':
+            if (enemy.isOnGround()) {
+                enemy.speed.y = -20;//敌人速度y坐标为-20，意思是敌人跳跃
+            }
+            break;
+        case 'ArrowLeft':
+            keys.left = true;
+            break;
+        case 'ArrowRight':
+            keys.right = true;
+            break;
+        case '1':
+            enemy.attack();
             break;
         default:
             break;
@@ -87,35 +219,69 @@ window.addEventListener('keyup', (event) => {
         default:
             break;
     }
+    switch (event.key) {
+        case 'ArrowLeft':
+            keys.left = false;
+            break;
+        case 'ArrowRight':
+            keys.right = false;
+            break;
+        default:
+            break;
+    }
 });
 
 //动画函数,模拟重力和跳跃
 function animate() {
     window.requestAnimationFrame(animate);//递归调用
-    background.draw();//绘制背景
-    shuzhuang.draw();//绘制人物
-    shuzhuang.animateFrames();//人物动画
+    background.update();//绘制背景
+    shuzhuang.update();//更新树桩位置和动画
 
-    c.fillStyle = 'red';//设置填充颜色
-    c.fillRect(player.position.x, player.position.y,
-         player.width, player.height );//绘制矩形
 
+
+    player.update();//更新玩家位置和动画
+    enemy.update();//更新敌人位置和动画
 
     player.speed.x = 0;//玩家速度x坐标为0，意思是玩家不移动
     if (keys.a) {
         player.speed.x = -4;//玩家速度x坐标为-4，意思是玩家向左移动
+        player.switchSprite('run');
     }else if (keys.d) {
         player.speed.x = 4;//玩家速度x坐标为4，意思是玩家向右移动
+        player.switchSprite('run');
+    }else{
+        player.switchSprite('idle');
+    }
+    if (player.speed.y < 0) {
+        player.switchSprite('jump');
+    }else if (player.speed.y > 0) {
+        player.switchSprite('fall');
     }
 
+    enemy.speed.x = 0;//敌人速度x坐标为0，意思是敌人不移动
+    if (keys.left) {
+        enemy.speed.x = -4;//敌人速度x坐标为-4，意思是敌人向左移动
+        enemy.switchSprite('run');
+    }else if (keys.right) {
+        enemy.speed.x = 4;//敌人速度x坐标为4，意思是敌人向右移动
+        enemy.switchSprite('run');
+    }else{
+        enemy.switchSprite('idle');
+    }
+    if (enemy.speed.y < 0) {
+        enemy.switchSprite('jump');
+    }
+    else if (enemy.speed.y > 0) {
+        enemy.switchSprite('fall');
+    }
 
-    player.speed.y += gravity;//玩家速度y坐标加上重力
-    player.position.y += player.speed.y;//玩家位置y坐标加上速度y坐标
-    player.position.x += player.speed.x;//玩家位置x坐标加上速度x坐标
-    
-    if (player.position.y + player.height + player.speed.y >= ground) {
-        player.speed.y = 0;//玩家速度y坐标为0
-        player.position.y = ground - player.height;//玩家位置y坐标为地面高度减去玩家高度，意思是玩家站在地面上
+    if(player.isAttacking && player.framesCurrent === 4){
+        enemy.takeHit();
+        player.isAttacking = false;
+    }
+    if(enemy.isAttacking && enemy.framesCurrent === 4){
+        player.takeHit();
+        enemy.isAttacking = false;
     }
 }
 animate();

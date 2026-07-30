@@ -19,8 +19,29 @@
             </div>
         </div>
         <canvas id="gameCanvas"></canvas>
+        <div id="startScreen">
+            <div class="start-title">双人格斗</div>
+            <div class="ready-container">
+                <div class="ready-slot" id="p1Ready">
+                    <div class="ready-label">P1</div>
+                    <div class="ready-key">按 J 准备</div>
+                    <div class="ready-status" id="p1Status">未准备</div>
+                </div>
+                <div class="vs-text">VS</div>
+                <div class="ready-slot" id="p2Ready">
+                    <div class="ready-label">P2</div>
+                    <div class="ready-key">按 1 准备</div>
+                    <div class="ready-status" id="p2Status">未准备</div>
+                </div>
+            </div>
+        </div>
+        <div id="vsScreen">P1 VS P2</div>
+        <div id="gameOver">
+            <div id="winnerText">P1 获胜！</div>
+            <button id="restartBtn" onclick="restartGame()">重新开始</button>
+        </div>
 
-
+        <script src="util.js"></script>
         <script src="sptite.js"></script>
 
         <script src="main.js"></script>
